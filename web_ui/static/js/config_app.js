@@ -224,6 +224,7 @@ const trackerNameMap = {
   'BJS': 'BrasilJapão-Share',
   'BT': 'BrasilTracker',
   'CBR': 'CapybaraBR',
+  'CMCT': 'CMCT',
   'CZ': 'CinemaZ',
   'TIK': 'Cinematik',
   'DP': 'DarkPeers',
