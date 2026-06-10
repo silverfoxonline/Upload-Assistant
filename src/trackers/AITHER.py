@@ -1,4 +1,5 @@
 # Upload Assistant © 2025 Audionut & wastaken7 — Licensed under UAPL v1.0
+import re
 from typing import Any
 
 from src.console import console
@@ -52,6 +53,16 @@ class AITHER(UNIT3D):
         elif not has_hdr10p and any(flag in hdr_value for flag in ['HDR', 'HLG']):
             data['hdr'] = 1
 
+        return data
+
+    async def get_description(self, meta: dict[str, Any]) -> dict[str, str]:
+        data = await super().get_description(meta)
+        data['description'] = re.sub(
+            r"\s*\[right\]\[url=https://github\.com/Audionut/Upload-Assistant\]\[size=\d+\].*?\[/size\]\[/url\]\[/right\]\s*$",
+            "",
+            data['description'],
+            flags=re.DOTALL,
+        ).strip()
         return data
 
     async def get_name(self, meta: dict[str, Any]):
