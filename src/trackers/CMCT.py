@@ -271,20 +271,103 @@ class CMCT:
             return aka
         return str(meta.get('title', '')).strip()
 
-    def get_url(self, meta: Meta) -> str:
-        for key in ('douban_url', 'douban_link', 'douban'):
-            douban_url = str(meta.get(key, '') or '').strip()
-            if 'douban.com' in douban_url:
-                return douban_url
+    def normalize_external_url(self, key: str, value: Any) -> str:
+        text = str(value or '').strip()
+        if not text:
+            return ''
+        douban_match = re.search(r'(?:https?://)?(?:movie\.)?douban\.com/subject/(\d+)/?', text)
+        if douban_match:
+            return f"https://movie.douban.com/subject/{douban_match.group(1)}/"
+        if 'douban' in key.lower() and re.fullmatch(r'\d{5,12}', text):
+            return f"https://movie.douban.com/subject/{text}/"
+        imdb_match = re.search(r'(?:https?://)?(?:www\.)?imdb\.com/title/(tt\d+)/?', text)
+        if imdb_match:
+            return f"https://www.imdb.com/title/{imdb_match.group(1)}/"
+        return ''
 
+    def find_external_url(self, value: Any, parent_key: str = '') -> str:
+        if isinstance(value, dict):
+            for key in ('douban_url', 'douban_link', 'douban', 'url', 'external_url', 'external_link'):
+                if key in value:
+                    url = self.normalize_external_url(key, value.get(key))
+                    if 'douban.com' in url:
+                        return url
+            fallback = ''
+            for key, item in value.items():
+                url = self.find_external_url(item, str(key))
+                if 'douban.com' in url:
+                    return url
+                if url and not fallback:
+                    fallback = url
+            return fallback
+        if isinstance(value, list):
+            fallback = ''
+            for item in value:
+                url = self.find_external_url(item, parent_key)
+                if 'douban.com' in url:
+                    return url
+                if url and not fallback:
+                    fallback = url
+            return fallback
+        return self.normalize_external_url(parent_key, value)
+
+    def get_url(self, meta: Meta) -> str:
         ptgen = cast(dict[str, Any], meta.get('ptgen', {}))
-        link = ptgen.get('link')
-        if isinstance(link, str) and 'douban.com' in link:
-            return link
-        if isinstance(link, str) and link:
-            return link
+        for source in (meta, ptgen):
+            url = self.find_external_url(source)
+            if 'douban.com' in url:
+                return url
+
+        url = self.find_external_url(ptgen) or self.find_external_url(meta)
+        if url:
+            return url
+
         imdb_url = cast(dict[str, Any], meta.get('imdb_info', {})).get('imdb_url', '')
-        return str(imdb_url or '')
+        if imdb_url:
+            return str(imdb_url)
+        imdb_id = str(meta.get('imdb') or meta.get('imdb_id') or '').strip()
+        if imdb_id and imdb_id not in ('0', 'None'):
+            imdb_id = imdb_id if imdb_id.startswith('tt') else f'tt{imdb_id}'
+            return f"https://www.imdb.com/title/{imdb_id}/"
+        return ''
+
+    def list_text_values(self, value: Any) -> list[str]:
+        if isinstance(value, dict):
+            values: list[str] = []
+            for item in value.values():
+                values.extend(self.list_text_values(item))
+            return values
+        if isinstance(value, list):
+            values = []
+            for item in value:
+                values.extend(self.list_text_values(item))
+            return values
+        return [str(value or '')]
+
+    def is_animation(self, meta: Meta) -> bool:
+        if bool(meta.get('anime')):
+            return True
+        values: list[str] = []
+        for key in ('genres', 'keywords'):
+            values.extend(self.list_text_values(meta.get(key)))
+        text = ' '.join(values).lower()
+        return any(token in text for token in ('animation', 'anime', 'donghua'))
+
+    def has_chinese_subtitle(self, meta: Meta) -> bool:
+        if bool(meta.get('hardcoded_subs')):
+            return True
+
+        values: list[str] = []
+        for key in ('subtitle_languages', 'subtitles'):
+            values.extend(self.list_text_values(meta.get(key)))
+        values.extend(self.list_text_values(cast(dict[str, Any], meta.get('bdinfo', {})).get('subtitles')))
+        values.extend(self.list_text_values(cast(dict[str, Any], meta.get('mediainfo', {}))))
+
+        text = ' '.join(values).lower()
+        return any(
+            token in text
+            for token in ('chinese', 'mandarin', 'cantonese', 'simplified', 'traditional', 'zh', 'chi', 'zho', 'cmn', 'yue')
+        )
 
     async def get_ptgen_metadata(self, meta: Meta) -> None:
         if isinstance(meta.get('ptgen'), dict) and meta['ptgen'].get('link'):
@@ -509,8 +592,10 @@ class CMCT:
 
         if meta.get('personalrelease', False):
             data['selfrelease'] = '1'
-        if meta.get('anime', False):
+        if self.is_animation(meta):
             data['animation'] = '1'
+        if self.has_chinese_subtitle(meta):
+            data['subtitlezh'] = '1'
         if meta.get('tv_pack', 0):
             data['pack'] = '1'
         if meta.get('is_disc', '') in ('BDMV', 'DVD'):
