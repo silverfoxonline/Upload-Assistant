@@ -253,8 +253,11 @@ class CMCT:
         current_year = self.normalize_year(meta.get('year'))
 
         if preferred_year and current_year and preferred_year != current_year:
-            return re.sub(rf'\b{re.escape(current_year)}\b', preferred_year, name, count=1)
-        return name
+            name = re.sub(rf'\b{re.escape(current_year)}\b', preferred_year, name, count=1)
+        return self.format_name(name)
+
+    def format_name(self, name: str) -> str:
+        return re.sub(r'\.{2,}', '.', re.sub(r'\s+', '.', name.strip())).strip('.')
 
     def get_small_descr(self, meta: Meta) -> str:
         ptgen = cast(dict[str, Any], meta.get('ptgen', {}))
