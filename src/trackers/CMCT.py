@@ -210,6 +210,48 @@ class CMCT:
         }
         return team_map.get(tag, '0')
 
+    def normalize_year(self, value: Any) -> str:
+        match = re.search(r'\b(18|19|20)\d{2}\b', str(value or ''))
+        return match.group(0) if match else ''
+
+    def get_ptgen_year(self, ptgen: dict[str, Any]) -> str:
+        for key in ('year', 'date', 'release_date', 'episodes_date'):
+            year = self.normalize_year(ptgen.get(key))
+            if year:
+                return year
+
+        for value in ptgen.values():
+            if isinstance(value, dict):
+                year = self.get_ptgen_year(cast(dict[str, Any], value))
+                if year:
+                    return year
+            elif isinstance(value, list):
+                for item in value:
+                    year = self.get_ptgen_year(item) if isinstance(item, dict) else self.normalize_year(item)
+                    if year:
+                        return year
+        return ''
+
+    def get_preferred_year(self, meta: Meta) -> str:
+        manual_year = self.normalize_year(meta.get('manual_year'))
+        if manual_year:
+            return manual_year
+
+        imdb_year = self.normalize_year(cast(dict[str, Any], meta.get('imdb_info', {})).get('year'))
+        if imdb_year:
+            return imdb_year
+
+        return self.get_ptgen_year(cast(dict[str, Any], meta.get('ptgen', {})))
+
+    def get_name(self, meta: Meta) -> str:
+        name = str(meta.get('name', '')).strip()
+        preferred_year = self.get_preferred_year(meta)
+        current_year = self.normalize_year(meta.get('year'))
+
+        if preferred_year and current_year and preferred_year != current_year:
+            return re.sub(rf'\b{re.escape(current_year)}\b', preferred_year, name, count=1)
+        return name
+
     def get_small_descr(self, meta: Meta) -> str:
         ptgen = cast(dict[str, Any], meta.get('ptgen', {}))
         trans_title = ptgen.get('trans_title', [])
@@ -401,7 +443,7 @@ class CMCT:
             'codec_sel': await self.get_video_codec_id(meta),
             'audiocodec_sel': await self.get_audio_codec_id(meta),
             'team_sel': await self.get_team_id(meta),
-            'name': str(meta.get('name', '')).strip(),
+            'name': self.get_name(meta),
             'small_descr': self.get_small_descr(meta),
             'url': self.get_url(meta),
             'url_poster': self.get_poster(meta),
