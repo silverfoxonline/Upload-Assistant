@@ -2,6 +2,7 @@
 import os
 import re
 from typing import Any, Union, cast
+from urllib.parse import urlparse
 
 import aiofiles
 import httpx
@@ -9,6 +10,7 @@ from bs4 import BeautifulSoup
 from unidecode import unidecode
 
 from src.console import console
+from src.rehostimages import RehostImagesManager
 from src.trackers.COMMON import COMMON
 
 Meta = dict[str, Any]
@@ -25,6 +27,8 @@ class CMCT:
         self.torrent_url = f'{self.base_url}/details.php?id='
         self.upload_url = f'{self.base_url}/takeupload.php'
         self.tracker_config = cast(dict[str, Any], self.config.get('TRACKERS', {}).get(self.tracker, {}))
+        self.rehost_images_manager = RehostImagesManager(config)
+        self.approved_image_hosts = ['pixhost', 'ptpimg', 'imgbox', 'gifyu', 'ssdforum']
         self.announce = str(
             self.tracker_config.get(
                 'announce_url',
@@ -360,7 +364,48 @@ class CMCT:
     def get_screenshots(self, meta: Meta) -> str:
         images_value = meta.get(f'{self.tracker}_images_key', meta.get('image_list', []))
         images = cast(list[dict[str, Any]], images_value) if isinstance(images_value, list) else []
-        return '\n'.join(str(image.get('raw_url', '')).strip() for image in images if image.get('raw_url'))
+        urls = [
+            url
+            for image in images
+            if (url := str(image.get('raw_url', '')).strip()) and self.is_valid_screenshot_url(url)
+        ]
+        return '\n'.join(urls)
+
+    def is_valid_screenshot_url(self, url: str) -> bool:
+        parsed = urlparse(url)
+        host = parsed.netloc.lower()
+        path = parsed.path.lower()
+        approved_domains = (
+            'pixhost.to',
+            'ptpimg.me',
+            'imgbox.com',
+            'gifyu.com',
+            'ssdforum.org',
+        )
+        return host.endswith(approved_domains) and path.endswith('.png')
+
+    async def check_image_hosts(self, meta: Meta) -> None:
+        url_host_mapping = {
+            'pixhost.to': 'pixhost',
+            'ptpimg.me': 'ptpimg',
+            'imgbox.com': 'imgbox',
+            'gifyu.com': 'gifyu',
+            'ssdforum.org': 'ssdforum',
+        }
+        await self.rehost_images_manager.check_hosts(
+            meta,
+            self.tracker,
+            url_host_mapping=url_host_mapping,
+            img_host_index=1,
+            approved_image_hosts=self.approved_image_hosts,
+        )
+
+        images_key = f'{self.tracker}_images_key'
+        images = cast(list[dict[str, Any]], meta.get(images_key, [])) if isinstance(meta.get(images_key), list) else []
+        valid_images = [image for image in images if self.is_valid_screenshot_url(str(image.get('raw_url', '')).strip())]
+        if len(valid_images) != len(images):
+            console.print(f"[yellow]{self.tracker}: CMCT only accepts PNG direct links from pixhost, ptpimg, imgbox, gifyu, or SSDForum.[/yellow]")
+        meta[images_key] = valid_images
 
     async def get_media_info(self, meta: Meta) -> str:
         if meta.get('is_disc', '') == 'BDMV':
@@ -434,6 +479,8 @@ class CMCT:
                 await self.get_ptgen_metadata(meta)
             else:
                 await self.common.ptgen(meta, self.ptgen_api, self.ptgen_retry)
+
+        await self.check_image_hosts(meta)
 
         data: dict[str, Any] = {
             'type': await self.get_category_id(meta),
