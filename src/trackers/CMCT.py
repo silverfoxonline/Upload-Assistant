@@ -279,9 +279,9 @@ class CMCT:
         for search in search_candidates:
             for _ in range(self.ptgen_retry + 1):
                 search_result = await fetch({'search': search})
-                if search_result and search_result.get('error') is None and search_result.get('data'):
+                if search_result and search_result.get('data'):
                     break
-            if search_result and search_result.get('error') is None and search_result.get('data'):
+            if search_result and search_result.get('data'):
                 break
 
         douban_link = ''
