@@ -478,6 +478,17 @@ config = {
             # Example: If set to "MyTag", a release might become: Movie 2003 1080p WEB-DL DDP5.1 H.264-OriginalGroup DUAL-MyTag
             "tag_for_custom_release": "",
         },
+        "CMCT": {
+            # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
+            "link_dir_name": "",
+            # Export cookies from https://springsunday.net and save them to data/cookies/CMCT.txt.
+            # Netscape cookies.txt and simple SPRINGID=<value> formats are both supported.
+            "announce_url": "https://on.springsunday.net/announce.php",
+            "ptgen_api": "",
+            "anon": False,
+            "internal": False,
+            "internal_groups": [],
+        },
         "CZ": {
             # Instead of using the tracker acronym for folder name when sym/hard linking, you can use a custom name
             "link_dir_name": "",
