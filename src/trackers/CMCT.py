@@ -439,6 +439,9 @@ class CMCT:
         meta['ptgen'] = {'link': douban_link}
 
     def get_poster(self, meta: Meta) -> str:
+        if self.get_url(meta):
+            return ''
+
         poster = meta.get('poster') or cast(dict[str, Any], meta.get('imdb_info', {})).get('cover', '')
         if poster:
             return str(poster)
@@ -516,9 +519,6 @@ class CMCT:
             if base_desc.strip():
                 desc_parts.append(base_desc)
 
-        desc_parts.append(
-            f"[url=https://github.com/Audionut/Upload-Assistant][size=1]{meta.get('ua_signature', '')}[/size][/url]"
-        )
         desc = '\n\n'.join(part for part in desc_parts if part.strip())
 
         final_desc_path = f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt"
