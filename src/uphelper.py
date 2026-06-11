@@ -1,6 +1,7 @@
 # Upload Assistant © 2025 Audionut & wastaken7 — Licensed under UAPL v1.0
 import json
 import os
+import re
 import sys
 from collections.abc import Mapping
 from difflib import SequenceMatcher
@@ -25,6 +26,32 @@ class UploadHelper:
         if not isinstance(self.default_config, dict):
             raise ValueError("'DEFAULT' config section must be a dict")
         self.tracker_class_map = cast(Mapping[str, Any], tracker_class_map)
+
+    def ensure_confirmation_defaults(self, meta: Meta) -> None:
+        if meta.get('title') and meta.get('year') and meta.get('overview') is not None and meta.get('genres') is not None:
+            return
+
+        release_name = str(
+            meta.get('name')
+            or meta.get('uuid')
+            or meta.get('filename')
+            or os.path.basename(str(meta.get('path', '')))
+        ).strip()
+        release_name = os.path.splitext(os.path.basename(release_name))[0]
+
+        year_match = re.search(r'\b(19|20)\d{2}\b', release_name)
+        fallback_year = year_match.group(0) if year_match else ''
+        fallback_title = release_name[:year_match.start()] if year_match else release_name
+        fallback_title = re.sub(r'[._]+', ' ', fallback_title).strip(' -')
+
+        if not str(meta.get('title', '')).strip():
+            meta['title'] = fallback_title or release_name or 'Unknown'
+        if not str(meta.get('year', '')).strip():
+            meta['year'] = fallback_year
+        if meta.get('overview') is None:
+            meta['overview'] = ''
+        if meta.get('genres') is None:
+            meta['genres'] = ''
 
     async def dupe_check(self, dupes: list[Union[DupeEntry, str]], meta: Meta, tracker_name: str) -> tuple[bool, Meta]:
         def _format_dupe(entry: Union[DupeEntry, str]) -> str:
@@ -302,6 +329,7 @@ class UploadHelper:
 
     async def get_confirmation(self, meta: Meta) -> bool:
         confirm: bool = False
+        self.ensure_confirmation_defaults(meta)
         if meta['debug'] is True:
             console.print("[bold red]DEBUG: True - Will not actually upload!")
             console.print(f"Prep material saved to {meta['base_dir']}/tmp/{meta['uuid']}")
