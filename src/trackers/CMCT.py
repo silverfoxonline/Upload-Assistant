@@ -241,11 +241,38 @@ class CMCT:
         if manual_year:
             return manual_year
 
+        if meta.get('category') == 'TV':
+            season_year = self.get_tv_season_year(meta)
+            if season_year:
+                return season_year
+            return self.normalize_year(meta.get('year')) or self.get_ptgen_year(cast(dict[str, Any], meta.get('ptgen', {})))
+
         imdb_year = self.normalize_year(cast(dict[str, Any], meta.get('imdb_info', {})).get('year'))
         if imdb_year:
             return imdb_year
 
         return self.get_ptgen_year(cast(dict[str, Any], meta.get('ptgen', {})))
+
+    def get_tv_season_year(self, meta: Meta) -> str:
+        for key in (
+            'season_air_first_date',
+            'season_air_date',
+            'episode_airdate',
+            'episode_air_date',
+            'air_date',
+            'tvdb_episode_year',
+        ):
+            year = self.normalize_year(meta.get(key))
+            if year:
+                return year
+
+        for key in ('tmdb_season_data', 'tmdb_episode_data', 'tvdb_episode_data'):
+            value = meta.get(key)
+            if isinstance(value, dict):
+                year = self.get_ptgen_year(value)
+                if year:
+                    return year
+        return ''
 
     def get_name(self, meta: Meta) -> str:
         name = str(meta.get('name', '')).strip()
@@ -360,7 +387,9 @@ class CMCT:
         values: list[str] = []
         for key in ('subtitle_languages', 'subtitles'):
             values.extend(self.list_text_values(meta.get(key)))
-        values.extend(self.list_text_values(cast(dict[str, Any], meta.get('bdinfo', {})).get('subtitles')))
+        bdinfo = meta.get('bdinfo')
+        if isinstance(bdinfo, dict):
+            values.extend(self.list_text_values(bdinfo.get('subtitles')))
         values.extend(self.list_text_values(cast(dict[str, Any], meta.get('mediainfo', {}))))
 
         text = ' '.join(values).lower()
