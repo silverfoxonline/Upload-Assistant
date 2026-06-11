@@ -274,8 +274,21 @@ class CMCT:
                     return year
         return ''
 
+    def get_release_name(self, meta: Meta) -> str:
+        known_extensions = {
+            '.mkv', '.mp4', '.avi', '.m2ts', '.ts', '.mov', '.wmv', '.iso',
+            '.torrent', '.nfo',
+        }
+        for key in ('name', 'uuid', 'filename', 'path'):
+            value = str(meta.get(key, '') or '').strip()
+            if value:
+                release_name = os.path.basename(value.rstrip('/\\'))
+                stem, extension = os.path.splitext(release_name)
+                return stem if extension.lower() in known_extensions else release_name
+        return ''
+
     def get_name(self, meta: Meta) -> str:
-        name = str(meta.get('name', '')).strip()
+        name = self.get_release_name(meta)
         preferred_year = self.get_preferred_year(meta)
         current_year = self.normalize_year(meta.get('year'))
 

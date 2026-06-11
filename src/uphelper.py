@@ -31,13 +31,20 @@ class UploadHelper:
         if meta.get('title') and meta.get('year') and meta.get('overview') is not None and meta.get('genres') is not None:
             return
 
+        known_extensions = {
+            '.mkv', '.mp4', '.avi', '.m2ts', '.ts', '.mov', '.wmv', '.iso',
+            '.torrent', '.nfo',
+        }
         release_name = str(
             meta.get('name')
             or meta.get('uuid')
             or meta.get('filename')
             or os.path.basename(str(meta.get('path', '')))
         ).strip()
-        release_name = os.path.splitext(os.path.basename(release_name))[0]
+        release_name = os.path.basename(release_name.rstrip('/\\'))
+        stem, extension = os.path.splitext(release_name)
+        if extension.lower() in known_extensions:
+            release_name = stem
 
         year_match = re.search(r'\b(19|20)\d{2}\b', release_name)
         fallback_year = year_match.group(0) if year_match else ''
@@ -48,6 +55,8 @@ class UploadHelper:
             meta['title'] = fallback_title or release_name or 'Unknown'
         if not str(meta.get('year', '')).strip():
             meta['year'] = fallback_year
+        if not str(meta.get('name', '')).strip() and release_name:
+            meta['name'] = release_name
         if meta.get('overview') is None:
             meta['overview'] = ''
         if meta.get('genres') is None:
