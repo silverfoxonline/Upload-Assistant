@@ -468,7 +468,10 @@ class DescriptionBuilder:
             bluray_link = self.config["DEFAULT"].get("add_bluray_link", False)
 
             if meta.get("is_disc") in ["BDMV", "DVD"] and bluray_link and meta.get("release_url", ""):
-                release_url = meta["release_url"]
+                release_url = str(meta["release_url"]).strip()
+                release_label = str(meta.get("release_label", "")).strip()
+                if release_label and release_label != release_url:
+                    release_url = f"[url={release_url}]{release_label}[/url]"
 
             covers = False
             if await self.common.path_exists(f"{meta['base_dir']}/tmp/{meta['uuid']}/covers.json"):
@@ -633,10 +636,13 @@ class DescriptionBuilder:
 
         # UA Signature
         if not signature:
-            signature = f"[right][url=https://github.com/Audionut/Upload-Assistant][size=4]{meta['ua_signature']}[/size][/url][/right]"
-            if self.tracker == "HUNO":
-                signature = signature.replace("[size=4]", "[size=8]")
-        desc_parts.append(signature)
+            ua_signature = str(meta.get("ua_signature", "")).strip()
+            if ua_signature:
+                signature = f"[right][url=https://github.com/Audionut/Upload-Assistant][size=4]{ua_signature}[/size][/url][/right]"
+                if self.tracker == "HUNO":
+                    signature = signature.replace("[size=4]", "[size=8]")
+        if signature:
+            desc_parts.append(signature)
 
         description: str = "\n".join(
             part for part in desc_parts
