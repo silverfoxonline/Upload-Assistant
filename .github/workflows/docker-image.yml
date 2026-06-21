@@ -1,6 +1,9 @@
 name: Create and publish Docker images
 
 on:
+  push:
+    branches:
+      - master
   release:
     types:
       - published
@@ -37,9 +40,10 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ steps.image-name.outputs.image_name }}
           tags: |
-            type=raw,value=latest,enable=${{ github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.use_latest_tag == true) }},priority=1000
+            type=raw,value=latest,enable=${{ github.event_name == 'push' || github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.use_latest_tag == true) }},priority=1000
             type=ref,event=tag
-            type=ref,event=branch,enable=${{ !inputs.use_latest_tag }}
+            type=ref,event=branch,enable=${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.use_latest_tag != true) }}
+            type=sha,format=short
 
   build:
     needs: prepare
