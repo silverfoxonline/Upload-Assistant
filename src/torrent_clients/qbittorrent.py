@@ -41,6 +41,14 @@ class QbittorrentClientMixin:
     config: dict[str, Any]
 
     @staticmethod
+    def _coerce_bool(value: Any) -> bool:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.strip().lower() in ("1", "true", "yes", "on")
+        return bool(value)
+
+    @staticmethod
     def _extract_tracker_ids_from_comment(comment: str) -> dict[str, str]:
         raise NotImplementedError
 
@@ -780,17 +788,23 @@ class QbittorrentClientMixin:
         # Automatic management
         auto_management = False
         if not use_symlink and not use_hardlink:
-            am_config = client.get('automatic_management_paths', '')
-            if meta['debug']:
-                console.print(f"AM Config: {am_config}")
-            if isinstance(am_config, list):
-                for each in self._coerce_str_list(am_config):
-                    if os.path.normpath(each).lower() in os.path.normpath(path).lower():
-                        auto_management = True
+            am_override = client.get('automatic_management', client.get('auto_torrent_management'))
+            if am_override is not None:
+                auto_management = self._coerce_bool(am_override)
+                if meta['debug']:
+                    console.print(f"Automatic management override: {auto_management}")
             else:
-                am_config_str = str(am_config)
-                if os.path.normpath(am_config_str).lower() in os.path.normpath(path).lower() and am_config_str.strip() != "":
-                    auto_management = True
+                am_config = client.get('automatic_management_paths', '')
+                if meta['debug']:
+                    console.print(f"AM Config: {am_config}")
+                if isinstance(am_config, list):
+                    for each in self._coerce_str_list(am_config):
+                        if os.path.normpath(each).lower() in os.path.normpath(path).lower():
+                            auto_management = True
+                else:
+                    am_config_str = str(am_config)
+                    if os.path.normpath(am_config_str).lower() in os.path.normpath(path).lower() and am_config_str.strip() != "":
+                        auto_management = True
 
         qbt_category = client['qbit_cross_cat'] if cross and client.get('qbit_cross_cat') else client.get("qbit_cat") if not meta.get("qbit_cat") else meta.get('qbit_cat')
         content_layout = client.get('content_layout', 'Original')

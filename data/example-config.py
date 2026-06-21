@@ -981,6 +981,9 @@ config = {
             "use_tracker_as_tag": False,
             "qbit_tag": "",
             "qbit_cat": "",
+            # Enable qBittorrent Automatic Torrent Management when adding torrents.
+            # This is ignored when "linking" is set, because qBittorrent may move linked content.
+            "automatic_management": False,
             # If using cross seeding, add cross seed tag/category here
             "qbit_cross_tag": "",
             "qbit_cross_cat": "",

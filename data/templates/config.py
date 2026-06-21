@@ -246,6 +246,7 @@ config = {
             "qbit_port": "8080",
             "qbit_user": "",
             "qbit_pass": "",
+            "automatic_management": False,
         }
     }
 }

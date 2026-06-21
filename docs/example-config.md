@@ -292,6 +292,7 @@ Typical keys:
 - `super_seed_trackers` (list[str]): Trackers to enable super-seeding on.
 - `use_tracker_as_tag` (bool): Tag torrents with tracker acronym.
 - `qbit_tag` / `qbit_cat` (str): Tag/category for uploaded torrents.
+- `automatic_management` (bool): Enable qBittorrent Automatic Torrent Management when adding torrents. Ignored when `linking` is enabled.
 - `qbit_cross_tag` / `qbit_cross_cat` (str): Tag/category for cross-seed torrents.
 - `content_layout` (str): Layout hint (example default `"Original"`).
 - `linking` (str): `"symlink"`, `"hardlink"`, or empty to disable.
