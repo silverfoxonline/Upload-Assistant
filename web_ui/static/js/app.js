@@ -44,6 +44,64 @@ const apiFetch = (typeof window !== 'undefined' && window.uaApiFetch) || (async 
 });
 
 const sanitizeHtml = window.sanitizeHtml;
+const outputUrlRegex = /https?:\/\/[^\s<>"']+/gi;
+const trailingUrlPunctuationRegex = /[\])},.;:!?]+$/;
+
+const decorateOutputLinks = (root) => {
+  if (!root) return;
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: (node) => {
+      const parent = node.parentElement;
+      if (!parent || parent.closest('a')) return NodeFilter.FILTER_REJECT;
+      if (!outputUrlRegex.test(node.nodeValue || '')) return NodeFilter.FILTER_REJECT;
+      outputUrlRegex.lastIndex = 0;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  const textNodes = [];
+  let node = walker.nextNode();
+  while (node) {
+    textNodes.push(node);
+    node = walker.nextNode();
+  }
+
+  textNodes.forEach((textNode) => {
+    const text = textNode.nodeValue || '';
+    const fragment = document.createDocumentFragment();
+    let lastIndex = 0;
+    outputUrlRegex.lastIndex = 0;
+
+    text.replace(outputUrlRegex, (rawUrl, offset) => {
+      if (offset > lastIndex) {
+        fragment.appendChild(document.createTextNode(text.slice(lastIndex, offset)));
+      }
+
+      const trailing = rawUrl.match(trailingUrlPunctuationRegex)?.[0] || '';
+      const url = trailing ? rawUrl.slice(0, -trailing.length) : rawUrl;
+      const link = document.createElement('a');
+      link.href = url;
+      link.textContent = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.className = 'ua-output-link';
+      fragment.appendChild(link);
+      if (trailing) {
+        fragment.appendChild(document.createTextNode(trailing));
+      }
+
+      lastIndex = offset + rawUrl.length;
+      return rawUrl;
+    });
+
+    if (lastIndex < text.length) {
+      fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+    }
+
+    textNode.parentNode.replaceChild(fragment, textNode);
+  });
+};
 
 // Argument categories for the right sidebar (placeholders shown for info only)
 const argumentCategories = [
@@ -533,6 +591,7 @@ function AudionutsUAGUI() {
       const clean = sanitizeHtml((rawHtml || '').trim());
       const wrapper = document.createElement('div');
       wrapper.innerHTML = clean;
+      decorateOutputLinks(wrapper);
       container.appendChild(wrapper);
       // Use scrollIntoView to avoid clipping of the last line
       setTimeout(() => {
@@ -1071,6 +1130,7 @@ function AudionutsUAGUI() {
                   lastFullHashRef.current = key;
                   const wrapper = document.createElement('div');
                   wrapper.innerHTML = clean;
+                  decorateOutputLinks(wrapper);
                   if (rootContainer) rootContainer.appendChild(wrapper);
                   setTimeout(() => {
                     const last = rootContainer && rootContainer.lastElementChild;

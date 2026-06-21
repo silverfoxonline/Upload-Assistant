@@ -13,6 +13,14 @@
     <style>
         /* Rich output area styling (keeps preformatted blocks readable) */
         #rich-output pre { white-space: pre-wrap; font-family: monospace; }
+        #rich-output a.ua-output-link {
+            color: #60a5fa;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        #rich-output a.ua-output-link:hover {
+            color: #93c5fd;
+        }
         /* Smaller text output for mobile */
         @media (max-width: 767px) {
             #rich-output pre { font-size: 0.75rem; line-height: 1.25rem; }
