@@ -96,7 +96,7 @@ class BHD:
             nfo_path = nfo_files[0]
             async with aiofiles.open(nfo_path, 'rb') as f:
                 nfo_bytes = await f.read()
-            files['nfo'] = (os.path.basename(nfo_path), nfo_bytes, 'text/plain')
+            files['nfo_file'] = (os.path.basename(nfo_path), nfo_bytes, 'text/plain')
 
         data: dict[str, Any] = {
             'name': bhd_name,
