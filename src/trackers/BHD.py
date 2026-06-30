@@ -246,6 +246,7 @@ class BHD:
         base_path = f"{meta['base_dir']}/tmp/{meta['uuid']}/DESCRIPTION.txt"
         async with aiofiles.open(base_path, encoding='utf-8') as f:
             base = await f.read()
+        base = base.replace("[center]", "[align=center]").replace("[/center]", "[/align]")
         async with aiofiles.open(desc_path, 'w', encoding='utf-8') as desc:
             discs = cast(list[dict[str, Any]], meta.get('discs') or [])
             if discs:
@@ -309,14 +310,14 @@ class BHD:
                 await desc.write("[align=center]")
                 for each in range(len(images[:int(meta['screens'])])):
                     web_url = images[each]['web_url']
-                    img_url = images[each]['img_url']
+                    img_url = images[each].get('img_url') or images[each].get('raw_url', '')
                     if (each == len(images) - 1):
-                        await desc.write(f"[url={web_url}][img width=350]{img_url}[/img][/url]")
+                        await desc.write(f"[url={web_url}][img=350]{img_url}[/img][/url]")
                     elif (each + 1) % 2 == 0:
-                        await desc.write(f"[url={web_url}][img width=350]{img_url}[/img][/url]\n")
+                        await desc.write(f"[url={web_url}][img=350]{img_url}[/img][/url]\n")
                         await desc.write("\n")
                     else:
-                        await desc.write(f"[url={web_url}][img width=350]{img_url}[/img][/url] ")
+                        await desc.write(f"[url={web_url}][img=350]{img_url}[/img][/url] ")
                 await desc.write("[/align]")
             await desc.write(f"\n[align=right][url=https://github.com/Audionut/Upload-Assistant][size=10]{meta['ua_signature']}[/size][/url][/align]")
             await desc.close()

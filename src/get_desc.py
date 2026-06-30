@@ -512,6 +512,12 @@ class DescriptionBuilder:
 
         return release_url, cover_images
 
+    def _screenshot_image_url(self, image: dict[str, str]) -> str:
+        """Return the image URL to display inside screenshot BBCode."""
+        if self.tracker in {"AITHER", "BLU"}:
+            return image.get("img_url", "") or image.get("raw_url", "")
+        return image.get("raw_url", "") or image.get("img_url", "")
+
     async def unit3d_edit_desc(
         self,
         meta: dict[str, Any],
@@ -779,9 +785,9 @@ class DescriptionBuilder:
             desc_parts.append("[center]")
             for img_index in range(len(images[: int(meta["screens"])])):
                 web_url = images[img_index]["web_url"]
-                raw_url = images[img_index]["raw_url"]
+                img_url = self._screenshot_image_url(images[img_index])
                 desc_parts.append(
-                    f"[url={web_url}][img={self.config['DEFAULT'].get('thumbnail_size', '350')}]{raw_url}[/img][/url] "
+                    f"[url={web_url}][img={self.config['DEFAULT'].get('thumbnail_size', '350')}]{img_url}[/img][/url] "
                 )
                 if screensPerRow and (img_index + 1) % screensPerRow == 0:
                     desc_parts.append("\n")
@@ -835,8 +841,8 @@ class DescriptionBuilder:
                             desc_parts.append("[center]")
                             for img in meta[new_images_key]:
                                 web_url = img["web_url"]
-                                raw_url = img["raw_url"]
-                                image_str = f"[url={web_url}][img={thumb_size}]{raw_url}[/img][/url] "
+                                img_url = self._screenshot_image_url(img)
+                                image_str = f"[url={web_url}][img={thumb_size}]{img_url}[/img][/url] "
                                 desc_parts.append(image_str)
                             desc_parts.append("[/center]\n\n")
                         else:
@@ -896,8 +902,8 @@ class DescriptionBuilder:
                                 desc_parts.append("[center]")
                                 for img in uploaded_images:
                                     web_url = img["web_url"]
-                                    raw_url = img["raw_url"]
-                                    image_str = f"[url={web_url}][img={thumb_size}]{raw_url}[/img][/url] "
+                                    img_url = self._screenshot_image_url(img)
+                                    image_str = f"[url={web_url}][img={thumb_size}]{img_url}[/img][/url] "
                                     desc_parts.append(image_str)
                                 desc_parts.append("[/center]\n\n")
 
@@ -942,8 +948,8 @@ class DescriptionBuilder:
                         desc_parts.append("[center]")
                     for img_index in range(len(images[: int(meta["screens"])])):
                         web_url = images[img_index]["web_url"]
-                        raw_url = images[img_index]["raw_url"]
-                        image_str = f"[url={web_url}][img={thumb_size}]{raw_url}[/img][/url]"
+                        img_url = self._screenshot_image_url(images[img_index])
+                        image_str = f"[url={web_url}][img={thumb_size}]{img_url}[/img][/url]"
                         desc_parts.append(image_str)
                         if screensPerRow and (img_index + 1) % screensPerRow == 0:
                             desc_parts.append("\n")
@@ -1001,8 +1007,8 @@ class DescriptionBuilder:
                             desc_parts.append("[center]")
                             for img in meta[new_images_key]:
                                 web_url = img["web_url"]
-                                raw_url = img["raw_url"]
-                                image_str = f"[url={web_url}][img={thumb_size}]{raw_url}[/img][/url]"
+                                img_url = self._screenshot_image_url(img)
+                                image_str = f"[url={web_url}][img={thumb_size}]{img_url}[/img][/url]"
                                 desc_parts.append(image_str)
                             desc_parts.append("[/center]\n\n")
                         else:
@@ -1095,8 +1101,8 @@ class DescriptionBuilder:
                                 desc_parts.append("[center]")
                                 for img in uploaded_images:
                                     web_url = img["web_url"]
-                                    raw_url = img["raw_url"]
-                                    image_str = f"[url={web_url}][img={thumb_size}]{raw_url}[/img][/url]"
+                                    img_url = self._screenshot_image_url(img)
+                                    image_str = f"[url={web_url}][img={thumb_size}]{img_url}[/img][/url]"
                                     desc_parts.append(image_str)
                                 desc_parts.append("[/center]\n\n")
 
@@ -1143,9 +1149,9 @@ class DescriptionBuilder:
             desc_parts.append("[center]")
             for img_index in range(len(images[: int(meta["screens"])])):
                 web_url = images[img_index]["web_url"]
-                raw_url = images[img_index]["raw_url"]
+                img_url = self._screenshot_image_url(images[img_index])
                 desc_parts.append(
-                    f"[url={web_url}][img={self.config['DEFAULT'].get('thumbnail_size', '350')}]{raw_url}[/img][/url] "
+                    f"[url={web_url}][img={self.config['DEFAULT'].get('thumbnail_size', '350')}]{img_url}[/img][/url] "
                 )
                 if screensPerRow and (img_index + 1) % screensPerRow == 0:
                     desc_parts.append("\n")
@@ -1307,8 +1313,8 @@ class DescriptionBuilder:
                         char_count += len("[center]")
                         for img_index in range(len(images)):
                             web_url = images[img_index]["web_url"]
-                            raw_url = images[img_index]["raw_url"]
-                            image_str = f"[url={web_url}][img={thumb_size}]{raw_url}[/img][/url] "
+                            img_url = self._screenshot_image_url(images[img_index])
+                            image_str = f"[url={web_url}][img={thumb_size}]{img_url}[/img][/url] "
                             desc_parts.append(image_str)
                             char_count += len(image_str)
                             if screensPerRow and (img_index + 1) % screensPerRow == 0:
@@ -1320,8 +1326,8 @@ class DescriptionBuilder:
                     char_count += len("[center]")
                     for img in meta[new_images_key]:
                         web_url = img["web_url"]
-                        raw_url = img["raw_url"]
-                        image_str = f"[url={web_url}][img={thumb_size}]{raw_url}[/img][/url] "
+                        img_url = self._screenshot_image_url(img)
+                        image_str = f"[url={web_url}][img={thumb_size}]{img_url}[/img][/url] "
                         desc_parts.append(image_str)
                         char_count += len(image_str)
                     desc_parts.append("[/center]\n\n")
@@ -1367,11 +1373,11 @@ class DescriptionBuilder:
                     menu_parts.append("[center]")
                     for img_index, image in enumerate(menu_images):
                         web_url = image.get("web_url")
-                        raw_url = image.get("raw_url")
-                        if not web_url or not raw_url:
+                        img_url = self._screenshot_image_url(image)
+                        if not web_url or not img_url:
                             continue
                         menu_parts.append(
-                            f"[url={web_url}][img={self.config['DEFAULT'].get('thumbnail_size', '350')}]{raw_url}[/img][/url] "
+                            f"[url={web_url}][img={self.config['DEFAULT'].get('thumbnail_size', '350')}]{img_url}[/img][/url] "
                         )
                         if screensPerRow and (img_index + 1) % screensPerRow == 0:
                             menu_parts.append("\n")
