@@ -112,16 +112,16 @@ async def gen_desc(
 
         if nfo_files:
             nfo = nfo_files[0]
+            nfo_encoding = "utf-8"
+            async with aiofiles.open(nfo, "rb") as nfo_file:
+                nfo_bytes = await nfo_file.read()
             try:
-                async with aiofiles.open(nfo, encoding="utf-8") as nfo_file:
-                    nfo_content = await nfo_file.read()
-                if meta["debug"]:
-                    console.print("NFO content read with utf-8 encoding.")
+                nfo_content = nfo_bytes.decode("utf-8")
             except UnicodeDecodeError:
-                if meta["debug"]:
-                    console.print("utf-8 decoding failed, trying latin1.")
-                async with aiofiles.open(nfo, encoding="latin1") as nfo_file:
-                    nfo_content = await nfo_file.read()
+                nfo_encoding = "cp437"
+                nfo_content = nfo_bytes.decode("cp437", errors="replace")
+            if meta["debug"]:
+                console.print(f"NFO content read with {nfo_encoding} encoding.")
 
             if not content_written:
                 if scene_nfo is True:

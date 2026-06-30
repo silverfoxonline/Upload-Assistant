@@ -247,7 +247,20 @@ class BHD:
         async with aiofiles.open(base_path, encoding='utf-8') as f:
             base = await f.read()
         base = base.replace("[center]", "[align=center]").replace("[/center]", "[/align]")
+        base = re.sub(
+            r"\[align=center\]\[spoiler=(?:Scene NFO:|FraMeSToR NFO:)\]\[code\][\s\S]*?\[/code\]\[/spoiler\]\[/align\]\s*",
+            "",
+            base,
+        )
         async with aiofiles.open(desc_path, 'w', encoding='utf-8') as desc:
+            default_cfg = cast(dict[str, Any], self.config.get('DEFAULT', {}))
+            release_url = str(meta.get('release_url', '')).strip()
+            release_label = str(meta.get('release_label', '')).strip()
+            if meta.get('is_disc') in ['BDMV', 'DVD'] and default_cfg.get('add_bluray_link', False) and release_url:
+                release_text = release_url
+                if release_label and release_label != release_url:
+                    release_text = f"[url={release_url}]{release_label}[/url]"
+                await desc.write(f"[align=center]{release_text}[/align]\n\n")
             discs = cast(list[dict[str, Any]], meta.get('discs') or [])
             if discs:
                 if discs[0]['type'] == "DVD":
