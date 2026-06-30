@@ -1,5 +1,6 @@
 # Upload Assistant © 2025 Audionut & wastaken7 — Licensed under UAPL v1.0
 import asyncio
+import glob
 import os
 import platform
 import re
@@ -88,6 +89,14 @@ class BHD:
             'mediainfo': mi_dump,
             'file': ('torrent.torrent', torrent_bytes, 'application/x-bittorrent'),
         }
+        nfo_files = glob.glob(f"{meta['base_dir']}/tmp/{meta['uuid']}/*.nfo")
+        if not nfo_files and meta.get('keep_nfo', False) and (meta.get('keep_folder', False) or meta.get('isdir', False)):
+            nfo_files = glob.glob(os.path.join(str(meta.get('path', '')), "*.nfo"))
+        if nfo_files:
+            nfo_path = nfo_files[0]
+            async with aiofiles.open(nfo_path, 'rb') as f:
+                nfo_bytes = await f.read()
+            files['nfo'] = (os.path.basename(nfo_path), nfo_bytes, 'text/plain')
 
         data: dict[str, Any] = {
             'name': bhd_name,
